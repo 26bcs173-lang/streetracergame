@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060913">
+<title>Street Racer — Apex Edition</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  --bg-dark: #060913;
+  --panel-bg: rgba(14, 20, 36, 0.75);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-border-glow: rgba(0, 229, 255, 0.25);
+  --cyan: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.35);
+  --purple: #8a5cf6;
+  --gold: #ffc837;
+  --gold-glow: rgba(255, 200, 55, 0.25);
+  --red: #ff3358;
+  --ink: #f0f4fd;
+  --mut: #8e9bb0;
+  --radius-xl: 24px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: var(--bg-dark);
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: 
+    radial-gradient(circle at 10% 10%, rgba(0, 240, 255, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 90% 85%, rgba(138, 92, 246, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(6, 9, 19, 0.8) 0%, #060913 100%);
+}
+
+.app {
+  position: relative;
+  width: min(100%, 960px);
+  height: min(100vh, 920px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.logo {
+  font: 900 22px 'Orbitron', sans-serif;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo b { color: var(--cyan); text-shadow: 0 0 16px var(--cyan-glow); }
+
+.status {
+  font: 700 11px 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+  color: var(--gold);
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 200, 55, 0.3);
+  border-radius: 99px;
+  background: rgba(255, 200, 55, 0.06);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 20px rgba(255, 200, 55, 0.08);
+}
+
+.screen { display: none; width: 100%; height: calc(100% - 48px); }
+.screen.active { display: block; }
+
+.glass {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: 0 30px 100px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--radius-xl);
+}
+
+/* GARAGE UI */
+.garage {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.heading { display: flex; justify-content: space-between; align-items: flex-end; }
+.eyebrow { font: 800 10px 'Orbitron', sans-serif; color: var(--cyan); letter-spacing: 3px; text-transform: uppercase; }
+.title { font: 900 32px 'Orbitron', sans-serif; margin: 4px 0 0; letter-spacing: -0.5px; }
+.subtitle { color: var(--mut); font-size: 14px; margin-top: 4px; font-weight: 500; }
+.credits {
+  font: 800 16px 'Orbitron', sans-serif;
+  color: var(--gold);
+  background: rgba(255,200,55,0.1);
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1px solid rgba(255,200,55,0.25);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.cars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+  overflow-y: auto;
+  padding: 4px;
+  max-height: calc(100% - 140px);
+}
+
+.car-card {
+  position: relative;
+  padding: 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-card:hover { transform: translateY(-4px); border-color: rgba(0, 240, 255, 0.4); background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); }
+.car-card.selected { border-color: var(--cyan); box-shadow: 0 0 35px var(--cyan-glow), inset 0 0 15px rgba(0,240,255,0.1); }
+.car-card.locked { opacity: 0.6; filter: grayscale(0.2); }
+
+.car-name { font: 800 15px 'Orbitron', sans-serif; letter-spacing: 0.5px; }
+.car-type { font-size: 11px; color: var(--mut); font-weight: 700; margin-top: 2px; }
+.car-visual { height: 110px; display: flex; align-items: center; justify-content: center; }
+.car-svg { width: 140px; height: 90px; filter: drop-shadow(0 12px 20px rgba(0,0,0,0.7)); }
+
+.selected-tag {
+  position: absolute; top: 12px; right: 12px;
+  font: 800 9px 'Orbitron', sans-serif; color: #03080d; background: var(--cyan);
+  padding: 4px 10px; border-radius: 99px; letter-spacing: 1px;
+}
+.lock { position: absolute; top: 12px; right: 12px; font-size: 14px; }
+
+.stats { display: grid; gap: 8px; margin-top: 10px; }
+.stat { display: grid; grid-template-columns: 55px 1fr; align-items: center; font-size: 10px; font-weight: 800; color: var(--mut); letter-spacing: 0.5px; }
+.bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; padding: 1px; }
+.fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--cyan), var(--purple)); }
+
+.price { margin-top: 12px; font: 800 12px 'Orbitron', sans-serif; color: var(--gold); }
+
+.garage-actions { display: flex; justify-content: center; gap: 14px; }
+.btn {
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.05);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  padding: 14px 28px;
+  font: 800 12px 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn.primary {
+  background: linear-gradient(135deg, var(--cyan), #0099b8);
+  color: #02090e; border: 0;
+  box-shadow: 0 0 30px var(--cyan-glow);
+}
+.btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.25); }
+.btn.primary:hover { box-shadow: 0 0 40px var(--cyan-glow); }
+.btn:active { transform: scale(0.97); }
+
+/* RACE UI */
+.race-shell {
+  position: relative;
+  width: min(100%, 430px);
+  height: 100%;
+  margin: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.race-wrap {
+  position: relative;
+  flex: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+}
+
+canvas { display: block; width: 100%; height: 100%; background: #0b0e17; touch-action: none; }
+
+.hud {
+  position: absolute; left: 12px; right: 12px; top: 12px;
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px;
+  pointer-events: none;
+}
+.hud-card {
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-md);
+  background: rgba(6, 9, 19, 0.8);
+  backdrop-filter: blur(12px);
+}
+.hud-card.center { text-align: center; }
+.hud-card.right { text-align: right; }
+.label { font: 800 8px 'Orbitron', sans-serif; color: var(--mut); letter-spacing: 1px; }
+.value { font: 900 16px 'Orbitron', sans-serif; margin-top: 2px; }
+.cyan { color: var(--cyan); }
+
+.hud-actions { position: absolute; right: 12px; top: 66px; display: flex; gap: 6px; }
+.icon {
+  width: 38px; height: 38px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  background: rgba(6, 9, 19, 0.85);
+  color: white; font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.icon:hover { background: rgba(255,255,255,0.15); }
+
+.nitro {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  height: 8px; background: rgba(0,0,0,0.6);
+  border-radius: 99px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.nitro i {
+  display: block; height: 100%; width: 100%;
+  background: linear-gradient(90deg, #ff9f1c, var(--gold), var(--cyan));
+  box-shadow: 0 0 16px var(--cyan);
+}
+
+.pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+.k {
+  height: 56px; border-radius: var(--radius-md);
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.05);
+  color: white; font: 800 11px 'Orbitron', sans-serif;
+  cursor: pointer; touch-action: none;
+  transition: all 0.1s;
+}
+.k.on, .k:active { background: rgba(0, 240, 255, 0.25); border-color: var(--cyan); box-shadow: 0 0 20px var(--cyan-glow); }
+.k.n { color: var(--gold); border-color: rgba(255, 200, 55, 0.3); }
+.small { font: 600 8px 'Plus Jakarta Sans', sans-serif; color: var(--mut); display: block; margin-top: 2px; }
+
+.controls { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+.hint { text-align: center; color: var(--mut); font-size: 12px; margin-top: 8px; font-weight: 600; }
+
+@media (max-width: 768px) {
+  .cars { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .app { padding: 8px; }
+  .garage { padding: 16px; }
+  .title { font-size: 24px; }
+  .cars { gap: 10px; }
+  .car-card { padding: 12px; }
+  .car-visual { height: 85px; }
+  .car-svg { width: 110px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="logo">🏎 STREET <b>RACER</b></div>
+    <div class="status" id="topStatus">GARAGE</div>
+  </header>
+
+  <!-- GARAGE SCREEN -->
+  <section id="garageScreen" class="screen active">
+    <div class="garage glass">
+      <div class="heading">
+        <div>
+          <div class="eyebrow">VEHICLE SELECT</div>
+          <div class="title">PRO GARAGE</div>
+          <div class="subtitle">Select your machine or unlock elite racing vehicles.</div>
+        </div>
+        <div class="credits">◉ <span id="coinBank">250</span></div>
+      </div>
+      
+      <div class="cars" id="cars"></div>
+      
+      <div class="garage-actions">
+        <button class="btn" id="upgradeBtn">⚡ MAX TUNING</button>
+        <button class="btn primary" id="driveBtn">START RACE →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RACE SCREEN -->
+  <section id="raceScreen" class="screen">
+    <div class="race-shell glass">
+      <div class="race-wrap">
+        <canvas id="c" width="360" height="600"></canvas>
+        <div class="hud">
+          <div class="hud-card">
+            <div class="label">SCORE</div>
+            <div class="value" id="scoreUI">0</div>
+          </div>
+          <div class="hud-card center">
+            <div class="label">LEVEL</div>
+            <div class="value" id="levelUI">1</div>
+          </div>
+          <div class="hud-card right">
+            <div class="label">SPEED</div>
+            <div class="value cyan" id="speedUI">0</div>
+          </div>
+        </div>
+        <div class="hud-actions">
+          <button class="icon" id="pause">Ⅱ</button>
+          <button class="icon" id="sound">🔊</button>
+        </div>
+        <div class="nitro"><i id="nitroUI"></i></div>
+      </div>
+
+      <div class="pad">
+        <button class="k" data-k="left">◀<span class="small">A / ←</span></button>
+        <button class="k" data-k="right">▶<span class="small">D / →</span></button>
+        <button class="k n" data-k="nitro">NITRO<span class="small">SHIFT</span></button>
+        <button class="k" data-k="down">BRAKE<span class="small">S / ↓</span></button>
+        <button class="k" data-k="up">GAS<span class="small">W / ↑</span></button>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="garageBtn">← GARAGE</button>
+        <button class="btn" id="restart">↻ RETRY</button>
+      </div>
+      <div class="hint">Dodge traffic · collect coins · close calls +5</div>
+    </div>
+  </section>
+</div>
+
+<script>
+// --- GARAGE CONFIG & VEHICLES ---
+const cars = [
+  { id: 'street', name: 'STREET X', type: 'BALANCED', color: '#00f0ff', price: 0, stats: [78, 72, 74], desc: 'Reliable all-rounder' },
+  { id: 'bolt', name: 'BOLT GT', type: 'SPEED', color: '#ff3358', price: 100, stats: [96, 65, 70], desc: 'High top speed' },
+  { id: 'phantom', name: 'PHANTOM R', type: 'HANDLING', color: '#8a5cf6', price: 180, stats: [82, 94, 76], desc: 'Precision steering' },
+  { id: 'apex', name: 'APEX RS', type: 'PRO', color: '#ffc837', price: 300, stats: [99, 91, 94], desc: 'Hypercar specs' },
+  { id: 'volt', name: 'VOLT EV', type: 'NITRO', color: '#10b981', price: 220, stats: [88, 78, 99], desc: 'Rapid boost refill' },
+  { id: 'shadow', name: 'SHADOW', type: 'STREET', color: '#e2e8f0', price: 140, stats: [86, 84, 82], desc: 'Night runner' }
+];
+
+let bank = +(localStorage.getItem('sr_bank') || 250);
+let selectedCar = localStorage.getItem('sr_car') || 'street';
+
+function isOwned(id) {
+  return id === 'street' || localStorage.getItem('sr_owned_' + id) === '1';
+}
+
+function generateCarSVG(car) {
+  return `
+  <svg class="car-svg" viewBox="0 0 180 110">
+    <defs>
+      <linearGradient id="g_${car.id}" x1="0" x2="1">
+        <stop stop-color="${car.color}"/>
+        <stop offset="1" stop-color="${car.color}" stop-opacity="0.45"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="90" cy="94" rx="60" ry="8" fill="#000" opacity="0.5"/>
+    <rect x="38" y="28" width="104" height="62" rx="20" fill="url(#g_${car.id})"/>
+    <path d="M58 31 Q90 5 122 31 L135 55 H45 Z" fill="${car.color}" opacity="0.85"/>
+    <path d="M66 30 Q90 14 114 30 L118 42 H62 Z" fill="#060913"/>
+    <rect x="48" y="54" width="12" height="26" rx="5" fill="#101726"/>
+    <rect x="120" y="54" width="12" height="26" rx="5" fill="#101726"/>
+    <rect x="49" y="66" width="10" height="6" rx="2" fill="#ff3358"/>
+    <rect x="121" y="66" width="10" height="6" rx="2" fill="#ff3358"/>
+    <circle cx="48" cy="86" r="7" fill="#060913"/>
+    <circle cx="132" cy="86" r="7" fill="#060913"/>
+  </svg>`;
+}
+
+function renderGarage() {
+  document.getElementById('coinBank').textContent = bank;
+  const container = document.getElementById('cars');
+  
+  container.innerHTML = cars.map(car => {
+    const owned = isOwned(car.id);
+    const isSelected = selectedCar === car.id;
+    return `
+    <article class="car-card ${isSelected ? 'selected' : ''} ${!owned ? 'locked' : ''}" onclick="selectCar('${car.id}')">
+      ${isSelected ? '<span class="selected-tag">SELECTED</span>' : !owned ? '<span class="lock">🔒</span>' : ''}
+      <div class="car-name">${car.name}</div>
+      <div class="car-type">${car.type} · ${car.desc}</div>
+      <div class="car-visual">${generateCarSVG(car)}</div>
+      <div class="stats">
+        <div class="stat"><span>SPD</span><div class="bar"><div class="fill" style="width:${car.stats[0]}%"></div></div></div>
+        <div class="stat"><span>HND</span><div class="bar"><div class="fill" style="width:${car.stats[1]}%"></div></div></div>
+        <div class="stat"><span>NIT</span><div class="bar"><div class="fill" style="width:${car.stats[2]}%"></div></div></div>
+      </div>
+      <div class="price">${owned ? '✓ UNLOCKED' : '◉ ' + car.price + ' CREDITS'}</div>
+    </article>`;
+  }).join('');
+}
+
+function selectCar(id) {
+  const car = cars.find(c => c.id === id);
+  if (!car) return;
+
+  if (!isOwned(id)) {
+    if (bank < car.price) {
+      document.getElementById('topStatus').textContent = 'NEED ' + (car.price - bank) + ' CREDITS';
+      setTimeout(() => document.getElementById('topStatus').textContent = 'GARAGE', 1200);
+      return;
+    }
+    bank -= car.price;
+    localStorage.setItem('sr_bank', bank);
+    localStorage.setItem('sr_owned_' + id, '1');
+  }
+  
+  selectedCar = id;
+  localStorage.setItem('sr_car', id);
+  renderGarage();
+  document.getElementById('topStatus').textContent = car.name;
+  setTimeout(() => document.getElementById('topStatus').textContent = 'GARAGE', 1000);
+}
+
+renderGarage();
+
+document.getElementById('driveBtn').onclick = () => {
+  document.getElementById('garageScreen').classList.remove('active');
+  document.getElementById('raceScreen').classList.add('active');
+  document.getElementById('topStatus').textContent = 'RACING';
+  beginRace();
+};
+
+document.getElementById('garageBtn').onclick = () => {
+  st = 'ready';
+  document.getElementById('raceScreen').classList.remove('active');
+  document.getElementById('garageScreen').classList.add('active');
+  document.getElementById('topStatus').textContent = 'GARAGE';
+  renderGarage();
+};
+
+document.getElementById('upgradeBtn').onclick = () => {
+  document.getElementById('topStatus').textContent = 'MAX TUNED';
+  setTimeout(() => document.getElementById('topStatus').textContent = 'GARAGE', 1000);
+};
+
+// --- GAMEPLAY ENGINE ---
+const cv = document.getElementById('c'), g = cv.getContext('2d');
+const W = 360, H = 600, RL = 40, RR = 320, PY = 470;
+const keys = { left: 0, right: 0, up: 0, down: 0, nitro: 0 };
+const keyMap = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down', Shift: 'nitro', n: 'nitro', N: 'nitro' };
+
+let st = 'ready', px, speed, en, coins, parts, txt, off, dist, bonus, score, spawn, cspawn, lives, inv, nit, lvl, shake = 0, last = 0;
+let hi = +(localStorage.getItem('sr_hi') || 0);
+let muted = localStorage.getItem('sr_mu') === '1';
+let ac, osc, og, boosting = false;
+
+const ENEMY_COLORS = ['#3b82f6', '#eab308', '#a855f7', '#10b981', '#f97316', '#ec4899'];
+
+function setAudioUI() {
+  document.getElementById('sound').textContent = muted ? '🔇' : '🔊';
+  localStorage.setItem('sr_mu', muted ? '1' : '0');
+}
+setAudioUI();
+
+function initAudio() {
+  if (!ac) {
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      osc = ac.createOscillator();
+      og = ac.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = 50;
+      og.gain.value = 0;
+      osc.connect(og);
+      og.connect(ac.destination);
+      osc.start();
+    } catch (e) {}
+  }
+  if (ac && ac.state === 'suspended') ac.resume();
+}
+
+function beep(f, d, type, v) {
+  if (!ac || muted) return;
+  try {
+    const o = ac.createOscillator(), n = ac.createGain();
+    o.type = type || 'square';
+    o.frequency.value = f;
+    n.gain.value = v || 0.07;
+    n.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d);
+    o.connect(n);
+    n.connect(ac.destination);
+    o.start();
+    o.stop(ac.currentTime + d);
+  } catch (e) {}
+}
+
+function resetGame() {
+  px = W / 2 - 17; speed = 0; en = []; coins = []; parts = []; txt = [];
+  off = 0; dist = 0; bonus = 0; score = 0; spawn = 0; cspawn = 1;
+  lives = 3; inv = 0; nit = 100; lvl = 1; shake = 0;
+}
+
+function beginRace() {
+  initAudio();
+  resetGame();
+  st = 'play';
+}
+
+function togglePause() {
+  if (st === 'play') {
+    st = 'pause';
+    Object.keys(keys).forEach(k => keys[k] = 0);
+  } else if (st === 'pause') {
+    st = 'play';
+  }
+  document.getElementById('pause').textContent = st === 'pause' ? '▶' : 'Ⅱ';
+}
+
+document.getElementById('pause').onclick = togglePause;
+document.getElementById('sound').onclick = () => { muted = !muted; setAudioUI(); initAudio(); };
+document.getElementById('restart').onclick = beginRace;
+
+addEventListener('keydown', e => {
+  if (keyMap[e.key]) { keys[keyMap[e.key]] = 1; e.preventDefault(); }
+  if ((e.key === 'Enter' || e.key === ' ') && (st === 'ready' || st === 'over')) { beginRace(); e.preventDefault(); }
+  if (e.key === ' ' && st === 'play') { keys.down = 1; e.preventDefault(); }
+  if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') togglePause();
+  if (e.key === 'm' || e.key === 'M') { muted = !muted; setAudioUI(); }
+});
+
+addEventListener('keyup', e => {
+  if (keyMap[e.key]) keys[keyMap[e.key]] = 0;
+  if (e.key === ' ') keys.down = 0;
+});
+
+cv.addEventListener('pointerdown', () => {
+  if (st === 'ready' || st === 'over') beginRace();
+  else if (st === 'pause') togglePause();
+});
+
+document.querySelectorAll('.k').forEach(b => {
+  const k = b.dataset.k;
+  const setKey = v => e => {
+    e.preventDefault();
+    keys[k] = v;
+    b.classList.toggle('on', !!v);
+    if (v && st === 'ready') beginRace();
+  };
+  b.addEventListener('pointerdown', setKey(1));
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => b.addEventListener(t, setKey(0)));
+});
+
+function popText(t, x, y, c) { txt.push({ t, x, y, l: 1, c: c || '#ffc837' }); }
+function addSparks(x, y, n, c) {
+  for (let i = 0; i < n; i++) {
+    parts.push({ x, y, vx: (Math.random() - 0.5) * 300, vy: (Math.random() - 0.5) * 300, l: 0.6, c, r: 3 });
+  }
+}
+
+function hurt(o) {
+  lives--; inv = 1.8; shake = 14; speed *= 0.35; o.y = H + 200;
+  addSparks(px + 17, PY + 10, 22, '#ffc837');
+  beep(110, 0.35, 'sawtooth', 0.15);
+  if (lives <= 0) {
+    st = 'over';
+    if (score > hi) { hi = score; localStorage.setItem('sr_hi', hi); }
+  } else {
+    popText('-1 LIFE', px - 10, PY - 14, '#ff3358');
+  }
+}
+
+function update(dt) {
+  lvl = 1 + Math.floor(dist / 7000);
+  boosting = keys.nitro && nit > 0 && speed > 50;
+  const maxS = 440 + lvl * 12 + (boosting ? 170 : 0);
+  
+  nit = boosting ? Math.max(0, nit - 28 * dt) : Math.min(100, nit + 7 * dt);
+  
+  if (keys.up || boosting) speed = Math.min(maxS, speed + (boosting ? 320 : 170) * dt);
+  else if (keys.down) speed = Math.max(0, speed - 340 * dt);
+  else speed = Math.max(0, speed - 50 * dt);
+
+  px = Math.max(RL + 6, Math.min(RR - 40, px + (keys.right - keys.left) * 230 * Math.min(1, 0.35 + speed / 300) * dt));
+  inv -= dt; off = (off + speed * dt) % 60; dist += speed * dt;
+  score = Math.floor(dist / 20) + bonus;
+
+  spawn -= dt * (0.6 + speed / 300) * (1 + lvl * 0.08);
+  if (spawn <= 0) {
+    spawn = 1.1 + Math.random() * 0.7;
+    const r = Math.random();
+    const o = r < 0.2 ? { w: 40, h: 90, s: 90 + Math.random() * 30, c: '#8b8f98' } :
+              r > 0.85 ? { w: 32, h: 54, s: 220 + Math.random() * 60, c: '#ef4444' } :
+              { w: 34, h: 60, s: 110 + Math.random() * (80 + lvl * 8), c: ENEMY_COLORS[Math.floor(Math.random() * 6)] };
+    o.x = RL + 8 + Math.random() * (RR - RL - o.w - 16); o.y = -100;
+    if (!en.some(q => q.y < 80 && Math.abs(q.x - o.x) < 50)) en.push(o);
+  }
+
+  cspawn -= dt;
+  if (cspawn <= 0) {
+    cspawn = 1.5 + Math.random() * 2;
+    coins.push({ x: RL + 24 + Math.random() * (RR - RL - 48), y: -20, phase: Math.random() * 6.28 });
+  }
+
+  for (let c of coins) {
+    c.y += speed * dt;
+    c.phase += dt * 5;
+    if (Math.abs(c.x - px - 17) < 28 && Math.abs(c.y - PY - 30) < 42) {
+      c.y = H + 50; bonus += 10; bank++;
+      localStorage.setItem('sr_bank', bank);
+      beep(900, 0.12, 'sine');
+      popText('+10', c.x - 8, PY - 20);
+    }
+  }
+  coins = coins.filter(c => c.y < H + 30);
+
+  for (let o of en) {
+    const p = o.y;
+    o.y += (speed - o.s) * dt;
+    const hit = px < o.x + o.w - 2 && px + 34 > o.x + 2 && PY < o.y + o.h - 2 && PY + 60 > o.y + 2;
+    if (hit && inv <= 0) {
+      hurt(o); if (st === 'over') return;
+    } else if (!o.n && p < PY && o.y >= PY && !hit && Math.abs(o.x + o.w / 2 - px - 17) < o.w / 2 + 33) {
+      o.n = 1; bonus += 5;
+      popText('CLOSE CALL +5', px - 30, PY - 14, '#00f0ff');
+      beep(600, 0.08);
+    }
+  }
+  en = en.filter(o => o.y < H + 100);
+
+  if (speed > 20) {
+    parts.push({
+      x: px + 6 + Math.random() * 22, y: PY + 62,
+      vx: (Math.random() - 0.5) * 20, vy: 60 + speed * 0.2,
+      l: 0.35, c: boosting ? '#ff9f1c' : '#8a8a8a', r: boosting ? 4 : 2.5
+    });
+  }
+
+  document.getElementById('scoreUI').textContent = score.toLocaleString();
+  document.getElementById('levelUI').textContent = lvl;
+  document.getElementById('speedUI').textContent = Math.round(speed / 3) + ' km/h';
+  document.getElementById('nitroUI').style.width = nit + '%';
+}
+
+function drawCar(x, y, w, h, color, isHero) {
+  g.save();
+  g.shadowBlur = isHero ? 14 : 0;
+  g.shadowColor = isHero ? (boosting ? '#ff9f1c' : '#00f0ff') : 'transparent';
+  
+  g.fillStyle = 'rgba(0,0,0,0.45)';
+  g.fillRect(x + 3, y + 5, w, h);
+  
+  g.fillStyle = color;
+  g.beginPath();
+  g.roundRect(x, y, w, h, 8);
+  g.fill();
+  
+  g.fillStyle = '#060913';
+  g.fillRect(x + 5, y + 9, w - 10, 13);
+  g.fillRect(x + 6, y + h - 17, w - 12, 9);
+  
+  g.fillStyle = '#fff';
+  g.fillRect(x + 4, y + 1, 6, 4);
+  g.fillRect(x + w - 10, y + 1, 6, 4);
+  
+  g.fillStyle = '#ff3358';
+  g.fillRect(x + 4, y + h - 5, 7, 4);
+  g.fillRect(x + w - 11, y + h - 5, 7, 4);
+  
+  if (isHero) {
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.fillRect(x + w / 2 - 2, y + 10, 4, h - 20);
+    
+    if (boosting) {
+      g.fillStyle = '#ff9f1c';
+      g.beginPath();
+      g.moveTo(x + 8, y + h); g.lineTo(x + 17, y + h + 28); g.lineTo(x + 22, y + h);
+      g.fill();
+      g.beginPath();
+      g.moveTo(x + w - 22, y + h); g.lineTo(x + w - 13, y + h + 28); g.lineTo(x + w - 8, y + h);
+      g.fill();
+    }
+  }
+  g.restore();
+}
+
+function draw() {
+  const L = (lvl - 1) % 4;
+  g.save();
+  
+  if (shake > 0.5) {
+    g.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    shake *= 0.88;
+  }
+  
+  const bgGrad = g.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, ['#0a1d29', '#241a12', '#152330', '#0a1a14'][L]);
+  bgGrad.addColorStop(1, ['#133623', '#4a361e', '#273847', '#0c2622'][L]);
+  g.fillStyle = bgGrad;
+  g.fillRect(0, 0, W, H);
+  
+  g.fillStyle = '#161c28';
+  g.fillRect(RL, 0, RR - RL, H);
+  
+  for (let y = -60 + off; y < H; y += 60) {
+    g.fillStyle = (Math.floor((y - off) / 60) % 2) ? '#e2e8f0' : '#ef4444';
+    g.fillRect(RL - 6, y, 6, 30);
+    g.fillRect(RR, y, 6, 30);
+    
+    g.fillStyle = '#64748b';
+    g.fillRect(RL + (RR - RL) / 3 - 2, y, 4, 30);
+    g.fillRect(RL + 2 * (RR - RL) / 3 - 2, y, 4, 30);
+  }
+  
+  for (let c of coins) {
+    const scale = 0.75 + 0.25 * Math.abs(Math.sin(c.phase));
+    g.save();
+    g.translate(c.x, c.y);
+    g.scale(scale, 1);
+    g.shadowBlur = 12; g.shadowColor = '#ffc837';
+    g.fillStyle = '#ffc837';
+    g.beginPath(); g.arc(0, 0, 9, 0, 7); g.fill();
+    g.fillStyle = '#78350f';
+    g.font = '800 11px Orbitron';
+    g.textAlign = 'center';
+    g.fillText('$', 0, 4);
+    g.restore();
+  }
+  
+  for (let o of en) drawCar(o.x, o.y, o.w, o.h, o.c, false);
+  
+  const activeCar = cars.find(c => c.id === selectedCar);
+  if (inv <= 0 || Math.floor(inv * 10) % 2) {
+    drawCar(px, PY, 34, 60, activeCar ? activeCar.color : '#00f0ff', true);
+  }
+  
+  for (let p of parts) {
+    g.globalAlpha = Math.max(0, p.l * 2);
+    g.fillStyle = p.c;
+    g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill();
+  }
+  g.globalAlpha = 1;
+  g.restore();
+  
+  g.textAlign = 'center';
+  g.font = '800 15px Orbitron';
+  for (let t of txt) {
+    g.globalAlpha = Math.max(0, t.l);
+    g.fillStyle = t.c;
+    g.shadowBlur = 10; g.shadowColor = t.c;
+    g.fillText(t.t, t.x + 30, t.y);
+    g.shadowBlur = 0;
+  }
+  g.globalAlpha = 1;
+
+  if (st !== 'play') {
+    g.fillStyle = 'rgba(4, 6, 14, 0.85)';
+    g.fillRect(0, 150, W, 270);
+    g.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+    g.strokeRect(20, 170, W - 40, 220);
+    
+    g.fillStyle = '#fff';
+    g.textAlign = 'center';
+    g.font = '900 28px Orbitron';
+    g.fillText(st === 'over' ? 'GAME OVER' : st === 'pause' ? 'PAUSED' : 'READY', W / 2, 235);
+    
+    g.font = '600 15px Plus Jakarta Sans';
+    g.fillText(st === 'over' ? 'Final Score ' + score + (score >= hi && score > 0 ? ' · NEW BEST!' : '') :
+               st === 'pause' ? 'Race paused' : 'Dodge traffic · collect coins · use nitro', W / 2, 270);
+    
+    g.font = '800 12px Orbitron';
+    g.fillStyle = '#ffc837';
+    g.fillText(st === 'pause' ? 'TAP / P TO RESUME' : 'TAP OR ENTER TO ' + (st === 'over' ? 'RETRY' : 'START'), W / 2, 335);
+  }
+}
+
+function loop(t) {
+  const dt = Math.min(0.04, (t - last) / 1000 || 0);
+  last = t;
+  
+  if (st === 'play') {
+    update(dt);
+    for (let p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.l -= dt; }
+    parts = parts.filter(p => p.l > 0);
+    for (let x of txt) { x.y -= 30 * dt; x.l -= dt * 0.8; }
+    txt = txt.filter(x => x.l > 0);
+  }
+  
+  if (og && osc) {
+    og.gain.value = (st === 'play' && !muted) ? 0.035 : 0;
+    osc.frequency.value = 55 + speed * 0.28 + (keys.nitro ? 25 : 0);
+  }
+  
+  draw();
+  requestAnimationFrame(loop);
+}
+
+resetGame();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
